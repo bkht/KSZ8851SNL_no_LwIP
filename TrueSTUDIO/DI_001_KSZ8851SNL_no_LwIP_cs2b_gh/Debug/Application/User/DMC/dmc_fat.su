@@ -1,0 +1,4 @@
+dmc_fat.c:3:9:scan_files	112	static
+dmc_fat.c:79:6:ShowFatFsError	8	static
+dmc_fat.c:128:6:ShowDiskStatus	8	static
+dmc_fat.c:142:9:set_timestamp	32	static

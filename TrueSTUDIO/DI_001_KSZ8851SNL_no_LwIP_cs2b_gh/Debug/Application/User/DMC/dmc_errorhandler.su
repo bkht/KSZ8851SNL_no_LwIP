@@ -1,0 +1,10 @@
+dmc_errorhandler.c:22:6:DMC_InitErrorHandler	8	static
+dmc_errorhandler.c:52:6:DMC_WriteUint32BKPSRAM	0	static
+dmc_errorhandler.c:61:10:DMC_ReadUint32BKPSRAM	0	static
+dmc_errorhandler.c:66:6:DMC_WriteStringBKPSRAM	16	static
+dmc_errorhandler.c:79:7:DMC_ReadStringBKPSRAM	0	static
+dmc_errorhandler.c:93:6:DMC_TestBKPSRAM	24	static
+dmc_errorhandler.c:125:6:DMC_ClearError	8	static
+dmc_errorhandler.c:133:10:DMC_GetError	0	static
+dmc_errorhandler.c:139:6:DMC_PrintError	8	static
+dmc_errorhandler.c:162:6:DMC_ErrorHandler	24	static

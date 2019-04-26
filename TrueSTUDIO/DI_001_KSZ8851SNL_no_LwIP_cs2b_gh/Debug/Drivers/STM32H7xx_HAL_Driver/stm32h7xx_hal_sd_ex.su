@@ -1,0 +1,4 @@
+stm32h7xx_hal_sd_ex.c:99:19:HAL_SDEx_ConfigDMAMultiBuffer	8	static
+stm32h7xx_hal_sd_ex.c:123:19:HAL_SDEx_ReadBlocksDMAMultiBuffer	40	static
+stm32h7xx_hal_sd_ex.c:205:19:HAL_SDEx_WriteBlocksDMAMultiBuffer	40	static
+stm32h7xx_hal_sd_ex.c:287:19:HAL_SDEx_ChangeDMABuffer	0	static

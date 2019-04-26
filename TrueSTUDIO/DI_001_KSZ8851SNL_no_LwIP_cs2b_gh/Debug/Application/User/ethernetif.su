@@ -1,0 +1,16 @@
+core_cm7.h:2391:22:SCB_CleanInvalidateDCache	20	static
+ethernetif.c:582:6:pbuf_free_custom	0	static
+ethernetif.c:649:9:ETH_PHY_IO_DeInit	0	static
+ethernetif.c:364:14:low_level_output	64	static
+ethernetif.c:695:9:ETH_PHY_IO_GetTick	0	static
+ethernetif.c:631:9:ETH_PHY_IO_Init	8	static
+ethernetif.c:662:9:ETH_PHY_IO_ReadReg	8	static
+ethernetif.c:680:9:ETH_PHY_IO_WriteReg	8	static
+ethernetif.c:128:6:HAL_ETH_MspInit	48	static
+ethernetif.c:185:6:HAL_ETH_MspDeInit	8	static
+ethernetif.c:458:6:ethernetif_input	48	static
+ethernetif.c:491:13:ethernetif_notify_conn_changed	0	static
+ethernetif.c:536:7:ethernetif_init	40	static
+ethernetif.c:603:7:sys_jiffies	0	static
+ethernetif.c:615:7:sys_now	0	static
+ethernetif.c:712:6:ethernet_link_check_state	120	static

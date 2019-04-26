@@ -1,0 +1,15 @@
+main.c:172:9:ARP_Delete	24	static
+main.c:187:9:ARP_Add	32	static
+main.c:219:9:ARP_GetMACfromIP	24	static
+main.c:234:6:RTC_FromEpoch	40	static
+main.c:289:9:CheckMACIP	0	static
+main.c:749:6:SystemClock_Config	320	static
+main.c:843:6:HAL_IncTicks	0	static
+main.c:848:6:HAL_StartTicks	0	static
+main.c:853:9:HAL_GetTicks	0	static
+main.c:863:6:HAL_StartTicks2	0	static
+main.c:868:9:HAL_GetTicks2	0	static
+main.c:366:5:main	104	static
+main.c:945:6:Error_Handler	0	static
+main.c:959:6:_Error_Handler	0	static
+main.c:985:6:assert_failed	0	static

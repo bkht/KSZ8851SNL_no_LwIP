@@ -1,0 +1,7 @@
+dmc_fifo.c:16:10:fifo_get_head	0	static
+dmc_fifo.c:24:6:fifo_push	0	static
+dmc_fifo.c:30:10:fifo_get_tail	0	static
+dmc_fifo.c:38:6:fifo_pop	0	static
+dmc_fifo.c:44:9:fifo_full	0	static
+dmc_fifo.c:49:9:fifo_count	0	static
+dmc_fifo.c:54:6:fifo_clear	0	static

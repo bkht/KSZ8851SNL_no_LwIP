@@ -1,0 +1,2 @@
+stm32h7xx_hal_cryp_ex.c:126:19:HAL_CRYPEx_AESGCM_GenerateAuthTAG	24	static
+stm32h7xx_hal_cryp_ex.c:265:19:HAL_CRYPEx_AESCCM_GenerateAuthTAG	40	static

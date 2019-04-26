@@ -1,0 +1,2 @@
+stm32h7xx_ll_delayblock.c:111:19:DelayBlock_Enable	16	static
+stm32h7xx_ll_delayblock.c:164:19:DelayBlock_Disable	0	static

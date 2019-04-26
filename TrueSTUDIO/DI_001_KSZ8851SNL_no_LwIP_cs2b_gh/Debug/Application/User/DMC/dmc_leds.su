@@ -1,0 +1,12 @@
+dmc_leds.c:49:9:DmcLedGetBlinkState	0	static
+dmc_leds.c:54:6:DmcLedSetState	0	static
+dmc_leds.c:60:6:DmcLedSetBlink	0	static
+dmc_leds.c:66:6:DmcLedsInit	0	static
+dmc_leds.c:90:6:DmcLedOn	0	static
+dmc_leds.c:120:6:DmcLedOff	0	static
+dmc_leds.c:75:6:DmcLedState	0	static
+dmc_leds.c:14:6:DmcLedTickTime	16	static
+dmc_leds.c:150:6:DmcLedToggle	0	static
+dmc_leds.c:180:6:DmcLedsOff	8	static
+dmc_leds.c:191:6:DmcLedsOn	8	static
+dmc_leds.c:202:6:DmcLedSet	8	static

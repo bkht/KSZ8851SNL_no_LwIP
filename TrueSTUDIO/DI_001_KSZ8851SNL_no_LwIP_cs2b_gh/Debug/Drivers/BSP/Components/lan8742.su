@@ -1,0 +1,14 @@
+lan8742.c:82:10:LAN8742_RegisterBusIO	12	static
+lan8742.c:108:9:LAN8742_Init	24	static
+lan8742.c:208:9:LAN8742_DeInit	8	static
+lan8742.c:234:9:LAN8742_DisablePowerDownMode	24	static
+lan8742.c:265:9:LAN8742_EnablePowerDownMode	24	static
+lan8742.c:296:9:LAN8742_StartAutoNego	24	static
+lan8742.c:333:9:LAN8742_GetLinkState	24	static
+lan8742.c:426:9:LAN8742_SetLinkState	24	static
+lan8742.c:479:9:LAN8742_EnableLoopbackMode	24	static
+lan8742.c:510:9:LAN8742_DisableLoopbackMode	24	static
+lan8742.c:551:9:LAN8742_EnableIT	24	static
+lan8742.c:592:9:LAN8742_DisableIT	24	static
+lan8742.c:632:10:LAN8742_ClearIT	16	static
+lan8742.c:663:9:LAN8742_GetITStatus	16	static

@@ -1,0 +1,2 @@
+dmc_tcpbase.c:308:6:net_poll	40	static
+dmc_tcpbase.c:324:6:ISR_tcpbase	0	static

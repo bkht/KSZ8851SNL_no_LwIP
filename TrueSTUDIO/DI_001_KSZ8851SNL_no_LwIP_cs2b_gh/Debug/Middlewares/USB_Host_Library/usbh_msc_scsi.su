@@ -1,0 +1,6 @@
+usbh_msc_scsi.c:104:20:USBH_MSC_SCSI_TestUnitReady	16	static
+usbh_msc_scsi.c:146:20:USBH_MSC_SCSI_ReadCapacity	16	static
+usbh_msc_scsi.c:202:20:USBH_MSC_SCSI_Inquiry	24	static
+usbh_msc_scsi.c:264:20:USBH_MSC_SCSI_RequestSense	24	static
+usbh_msc_scsi.c:323:20:USBH_MSC_SCSI_Write	24	static
+usbh_msc_scsi.c:384:20:USBH_MSC_SCSI_Read	24	static

@@ -1,0 +1,8 @@
+dmc_tcp.c:3:10:mb_set_exception	0	static
+dmc_tcp.c:18:10:mb_set_len	0	static
+dmc_tcp.c:29:10:mb_set_request	0	static
+dmc_tcp.c:45:10:mb_set_reply	0	static
+dmc_tcp.c:75:6:swap_buf_all	20	static
+dmc_tcp.c:105:6:swap_buf_eth	20	static
+dmc_tcp.c:115:6:swap_buf_ip	0	static
+dmc_tcp.c:125:6:swap_buf_tcp	0	static

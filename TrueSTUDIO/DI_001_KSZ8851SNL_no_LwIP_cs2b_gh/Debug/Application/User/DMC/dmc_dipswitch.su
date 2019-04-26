@@ -1,0 +1,2 @@
+dmc_dipswitch.c:3:9:ReadDipSwitches	8	static
+dmc_dipswitch.c:26:9:ReadDipSwitch	8	static

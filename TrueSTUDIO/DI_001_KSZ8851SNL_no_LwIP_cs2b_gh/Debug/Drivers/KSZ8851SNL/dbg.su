@@ -1,0 +1,2 @@
+dbg.c:56:6:DBG_sendString	0	static
+dbg.c:79:6:DBG_toggleDbgLED	0	static

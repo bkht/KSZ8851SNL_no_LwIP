@@ -1,0 +1,17 @@
+usbh_audio.c:664:27:USBH_AUDIO_SOFProcess	0	static
+usbh_audio.c:909:16:USBH_AUDIO_FindLinkedUnit	16	static
+usbh_audio.c:349:20:USBH_AUDIO_InterfaceDeInit	16	static
+usbh_audio.c:201:27:USBH_AUDIO_InterfaceInit	64	static
+usbh_audio.c:1875:27:USBH_AUDIO_SetControlAttribute	16	static
+usbh_audio.c:389:27:USBH_AUDIO_ClassRequest	16	static
+usbh_audio.c:1669:20:USBH_AUDIO_SetFrequency	20	static
+usbh_audio.c:1734:20:USBH_AUDIO_Play	0	static
+usbh_audio.c:1777:20:USBH_AUDIO_Suspend	0	static
+usbh_audio.c:1764:20:USBH_AUDIO_Stop	0	static
+usbh_audio.c:1800:20:USBH_AUDIO_Resume	0	static
+usbh_audio.c:1822:9:USBH_AUDIO_GetOutOffset	0	static
+usbh_audio.c:1844:20:USBH_AUDIO_ChangeOutBuffer	0	static
+usbh_audio.c:1936:20:USBH_AUDIO_SetVolume	0	static
+usbh_audio.c:1988:13:USBH_AUDIO_FrequencySet	0	static
+usbh_audio.c:1998:14:USBH_AUDIO_BufferEmptyCallback	0	static
+usbh_audio.c:640:27:USBH_AUDIO_Process	16	static
