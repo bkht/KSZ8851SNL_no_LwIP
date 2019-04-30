@@ -506,11 +506,13 @@ void FDCAN2_IT1_IRQHandler(void)
 void SPI1_IRQHandler(void)
 {
   /* USER CODE BEGIN SPI1_IRQn 0 */
+  
 //  dmc_puthex8cr(SPI1->SR);
   if (SPI1->SR & SPI_SR_EOT) // SPI_SR_EOT or SPI_SR_TXC, both work
   {
     set_spi_irq(&KSZ8851_interface_0);
   }
+  
   /* USER CODE END SPI1_IRQn 0 */
   HAL_SPI_IRQHandler(&hspi1);
   /* USER CODE BEGIN SPI1_IRQn 1 */
@@ -524,6 +526,8 @@ void SPI1_IRQHandler(void)
 void SPI4_IRQHandler(void)
 {
   /* USER CODE BEGIN SPI4_IRQn 0 */
+  
+  //  dmc_puthex8cr(SPI4->SR);
   if (SPI4->SR & SPI_SR_EOT) // SPI_SR_EOT or SPI_SR_TXC, both work
   {
     set_spi_irq(&KSZ8851_interface_1);

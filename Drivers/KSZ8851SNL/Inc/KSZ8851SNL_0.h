@@ -12,7 +12,14 @@ extern "C"
 
 struct KSZ8851_INTERFACE KSZ8851_interface_0;
 
-void ksz8851_init_0(void);
+uint8_t ksz8851_init_0(void);
+void ksz8851_IntEnable_0(void);
+void ksz8851snl_reset_tx_0(void);
+void ksz8851snl_reset_rx_0(void);
+void ksz8851_IntClearAll_0(void);
+void ksz8851_Send_0(uint8_t *pTXData, uint16_t pTXLength);
+uint16_t ksz8851_Receive_0(uint8_t *pRXData, uint16_t pRXLength);
+uint32_t KSZ8851_0_GetLinkState();
 
 #ifdef __cplusplus
 }

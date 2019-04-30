@@ -20,8 +20,9 @@ extern "C"
 #define KSZ8851_USE_RX_DMA        0
 #define KSZ8851_USE_HARD_RESET    0
 
-#define MULTI_FRAME               0
+#define FLUSH_QUEUE               0
 
+#define MULTI_FRAME               0
 
 #define INT_SPI_CALLBACK						HAL_SPI_TxRxCpltCallback
 #define SPI_HANDLE_TYPE							SPI_HandleTypeDef
@@ -73,6 +74,11 @@ typedef enum
 	INT_SPI_STATE_ERROR
 } int_spi_state_codes;
 
+typedef struct {
+  uint16_t rxStatus;
+  uint16_t rxLength;
+} FR_HEADER_INFO;
+
 struct KSZ8851_INTERFACE
 {
   uint32_t cs_port;
@@ -82,6 +88,9 @@ struct KSZ8851_INTERFACE
   SPI_HandleTypeDef *hspi;
   uint8_t MAC_address[6];
 
+//  uint16_t rxPacketLength;
+  uint16_t rxStatus;
+  uint16_t rxLength;
   uint16_t rxqcr;
   uint16_t frameId;
   uint8_t rxFrameCount;
@@ -95,6 +104,8 @@ struct KSZ8851_INTERFACE
   uint8_t speed;
   uint8_t duplex;
   uint8_t state;
+
+  FR_HEADER_INFO rxFrameHeader[MAX_FRAMES_IN_RXQ];
 };
 
 //#define SET_SPI_CS_PIN_NO_DELAY()	{ \

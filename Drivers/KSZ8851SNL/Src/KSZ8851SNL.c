@@ -229,7 +229,7 @@ uint8_t ksz8851_interface_init(struct KSZ8851_INTERFACE *interface)
   // SPI_BAUDRATEPRESCALER_8: 100MHz / 8 = 12.5 MHz
   // SPI_BAUDRATEPRESCALER_4: 100MHz / 4 = 25.0 MHz
   // SPI_BAUDRATEPRESCALER_2: 100MHz / 2 = 50.0 MHz - Too fast in practice...
-  interface->hspi->Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_4;
+  interface->hspi->Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_8;
   interface->hspi->Init.FirstBit = SPI_FIRSTBIT_MSB;
   interface->hspi->Init.TIMode = SPI_TIMODE_DISABLE;
   interface->hspi->Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
@@ -303,7 +303,23 @@ uint8_t ksz8851_init_chip(struct KSZ8851_INTERFACE *interface)
       // Bit 3-1 = Revision ID, 0x2 >> 1 = 1
       // Bit 0 = Reserved
       dev_id = ksz8851_reg_read(interface, REG_CHIP_ID); /* CIDER */
+//      dmc_puts(TERMINAL_YELLOW);
+//      dmc_puts("Chip ID: ");
+//      dmc_puthex4cr(dev_id);
+//      dmc_puts(TERMINAL_DEFAULT);
 
+//      if ((dev_id & 0xFFF0) != CHIP_ID_8851_16)
+//      {
+//        dmc_puts("Expected Device ID 0x");
+//        dmc_puthex4(CHIP_ID_8851_16);
+//        dmc_puts(", got 0x");
+//        dmc_puthex4cr(dev_id);
+//      }
+//      else
+//      {
+//        dmc_puts("Device ID: 0x");
+//        dmc_puthex4cr(dev_id);
+//      }
       // Try for 10mS maximum
       if (HAL_GetTick() - TickReadID > 10)
       {
@@ -337,6 +353,19 @@ uint8_t ksz8851_init_chip(struct KSZ8851_INTERFACE *interface)
   dmc_puthex4cr(dev_id);
   dmc_puts(TERMINAL_DEFAULT);
 
+//    dmc_puts("MAC_ADDR: ");
+//    dmc_puthex2(interface->MAC_address[0]);
+//    dmc_puts(":");
+//    dmc_puthex2(interface->MAC_address[1]);
+//    dmc_puts(":");
+//    dmc_puthex2(interface->MAC_address[2]);
+//    dmc_puts(":");
+//    dmc_puthex2(interface->MAC_address[3]);
+//    dmc_puts(":");
+//    dmc_puthex2(interface->MAC_address[4]);
+//    dmc_puts(":");
+//    dmc_puthex2cr(interface->MAC_address[5]);
+
   /* Init step 2-4: Write QMU MAC address (low, middle, high) */
   // Write QMU MAC address (low)
   ksz8851_reg_write(interface, REG_MAC_ADDR_0, (interface->MAC_address[4] << 8) | interface->MAC_address[5]); /* MARL */
@@ -344,6 +373,23 @@ uint8_t ksz8851_init_chip(struct KSZ8851_INTERFACE *interface)
   ksz8851_reg_write(interface, REG_MAC_ADDR_2, (interface->MAC_address[2] << 8) | interface->MAC_address[3]); /* MARM */
   // Write QMU MAC address (High)
   ksz8851_reg_write(interface, REG_MAC_ADDR_4, (interface->MAC_address[0] << 8) | interface->MAC_address[1]); /* MARH */
+
+//  // Just checking...
+//  uint16_t addr_0 = ksz8851_reg_read(interface, REG_MAC_ADDR_0);
+//  uint16_t addr_2 = ksz8851_reg_read(interface, REG_MAC_ADDR_2);
+//  uint16_t addr_4 = ksz8851_reg_read(interface, REG_MAC_ADDR_4);
+//  dmc_puts("MAC_ADDR: ");
+//  dmc_puthex2(addr_4 >> 8);
+//  dmc_puts(":");
+//  dmc_puthex2(addr_4 & 0xff);
+//  dmc_puts(":");
+//  dmc_puthex2(addr_2 >> 8);
+//  dmc_puts(":");
+//  dmc_puthex2(addr_2 & 0xff);
+//  dmc_puts(":");
+//  dmc_puthex2(addr_0 >> 8);
+//  dmc_puts(":");
+//  dmc_puthex2cr(addr_0 & 0xff);
 
   /* Init step 5: Enable QMU Transmit Frame Data Pointer Auto Increment. */
   ksz8851_reg_write(interface, REG_TX_ADDR_PTR,  /* TXFDPR */
@@ -363,7 +409,7 @@ uint8_t ksz8851_init_chip(struct KSZ8851_INTERFACE *interface)
       TX_CTRL_TCP_CHECKSUM |    /* Enable TCP frame checksum generation */
       TX_CTRL_IP_CHECKSUM |     /* Enable IP frame checksum generation */
       TX_CTRL_FLOW_ENABLE |     /* Enable transmit flow control */
-      TX_CTRL_PAD_ENABLE |      /* Eanble adding a padding to a packet shorter than 64 bytes */
+      TX_CTRL_PAD_ENABLE |      /* Enable adding a padding to a packet shorter than 64 bytes */
       TX_CTRL_CRC_ENABLE);      /* Enable adding a CRC to the end of transmit frame */
 
   /* Init step 7: Enable QMU Receive Frame Data Pointer Auto Increment. */
@@ -387,7 +433,7 @@ uint8_t ksz8851_init_chip(struct KSZ8851_INTERFACE *interface)
   /* Enable QMU Receive:
    * Flow control,
    * Receive all broadcast frames,
-   * receive unicast frames, and
+   * Receive unicast frames, and
    * IP/TCP/UDP checksum verification.
    */
   ksz8851_reg_write(interface, REG_RX_CTRL1,   /* RXCR1 */
@@ -440,6 +486,7 @@ uint8_t ksz8851_init_chip(struct KSZ8851_INTERFACE *interface)
       RXQ_FRAME_CNT_INT |         /* Enable RX interrupt by frame count threshold */
       RXQ_AUTO_DEQUEUE);          /* Enable release rx frames from rx buffer automatically */
 #else
+
   /* Enable
    * QMU Receive IP Header Two-Byte Offset,
    * Receive Frame Count Threshold,
@@ -737,7 +784,7 @@ uint16_t ksz8851_read_packet(struct KSZ8851_INTERFACE *interface, uint8_t *buf, 
   // Bit 15-8
   // RXFC RX Frame Count
   // To indicate the total received frames in RXQ frame buffer when receive
-  // interrupt (bit13=1 in ISR) occurred and write “1” to clear this bit 13 in
+  // interrupt (bit13=1 in ISR) occurred and write "1" to clear this bit 13 in
   // ISR. The host CPU can start to read the updated receive frame header
   // information in RXFHSR/RXFHBCR registers after read this RX frame
   // count register.
@@ -898,20 +945,88 @@ uint16_t ksz8851_fifo_read(struct KSZ8851_INTERFACE *interface, uint8_t *buf, ui
   clr_dma_rx_ended(interface);
   /* Invalidate D-cache before reception */
   /* Make sure the address is 32-byte aligned and add 32-bytes to length, in case it overlaps cacheline */
-//  __DSB();
-
-  /* Invalidate D-cache before reception */
+//  SCB_InvalidateDCache_by_Addr((uint32_t*)(((uint32_t)rx_buffer) & ~(uint32_t)0x1F), RX_LENGTH+32);
   SCB_InvalidateDCache_by_Addr((uint32_t*)(((uint32_t)buf) & ~(uint32_t)0x1F), len+32);
 
+  __DSB();
   /* Perform non-blocking DMA SPI transfer. Discard function returned value! TODO: handle it? */
   (void) HAL_SPI_Receive_DMA(interface->hspi, (uint8_t*) buf, len);
   /* an interrupt will occur */
+//  dmc_puts("Done\n");
   wait_dma_rx_ended(interface);
+//  dmc_puts("Done\n");
 #endif
 
+  /* Invalidate D-cache before reception */
+  /* Make sure the address is 32-byte aligned and add 32-bytes to length, in case it overlaps cacheline */
+//  SCB_InvalidateDCache_by_Addr((uint32_t*)(((uint32_t)rx_buffer) & ~(uint32_t)0x1F), RX_LENGTH+32);
+//  SCB_InvalidateDCache_by_Addr((uint32_t*)(((uint32_t)buf) & ~(uint32_t)0x1F), len+32);
+//  SCB_InvalidateDCache_by_Addr((uint32_t*)buf, ((len+31)/32)*32); /* Peri-to-Mem */
+//  SCB_CleanDCache_by_Addr((uint32_t*)buf, ((len+31)/32)*32); /* Mem-to-Peri */
+//  __DSB();
+//  SCB_CleanDCache(); /* Peri-to-Mem */
+
+//  clr_dma_rx_ended(interface);
+//  memset(buf, 0x55, 4);
+  /* Perform blocking DMA SPI transfer. Discard function returned value! TODO: handle it? */
+//  errorcode = HAL_SPI_Receive(interface->hspi, (uint8_t*) buf, len, 2000);
+  /* Perform non-blocking DMA SPI transfer. Discard function returned value! TODO: handle it? */
+//  errorcode = HAL_SPI_Receive_DMA(interface->hspi, (uint8_t*) buf, len);
+//  errorcode = HAL_SPI_TransmitReceive_DMA(interface->hspi, (uint8_t*) buf, (uint8_t*) buf, len);
+
+  /* an interrupt will occur */
+//  if (errorcode != HAL_OK)
+//  {
+//    dmc_puts(__FILE__);
+//    dmc_puts(", ");
+//    dmc_putint(__LINE__);
+//    dmc_puts(": Error: HAL_SPI_Transmit");
+//  }
+
+  /* No access to rx_buffer should be made before DMA transfer is completed */
+
+//  wait_dma_rx_ended(interface);
+
+//  for (uint32_t i = 0; i < 2000000; i++) // 200000000 ~ 1 Sec, 2000000 ~ 10mS
+//  {
+//    __NOP();
+//  }
+
+//  // Calculate bytes received from packets
+//  if ((buf[ETH_HDR_TYPE] == 0x08) && (buf[ETH_HDR_TYPE + 1] == 0x00)) // TCP/UDP
+//  {
+//    if (buf[IP_HDR_OFFSET + IP_HDR_PROTOCOL] == 0x11) // UDP
+//    {
+//      dmc_puthex2(buf[i]);
+//      dmc_putc(' ');
+//    }
+////    for (uint8_t i = 0; i < len; i++)
+////    {
+////      dmc_puthex2(buf[i]);
+////      dmc_putc(' ');
+////    }
+////    dmc_putcr();
+//////    len = ((buf[IP_HDR_OFFSET + IP_HDR_TOTAL_LENGTH] << 8) || buf[IP_HDR_OFFSET + IP_HDR_TOTAL_LENGTH + 1]) + ETH_HDR_SIZE;
+////    dmc_puthex2(buf[IP_HDR_OFFSET + IP_HDR_TOTAL_LENGTH]);
+////    dmc_puthex2(buf[IP_HDR_OFFSET + IP_HDR_TOTAL_LENGTH + 1]);
+////    dmc_putcr();
+////    dmc_putint(len);
+////    dmc_putcr();
+//  }
+//  if ((buf[ETH_HDR_TYPE] == 0x08) && (buf[ETH_HDR_TYPE] == 0x06)) // ARP
+//  {
+//    len = 60;
+//  }
 
   /* Stop the SPI transfer operation, terminate the operation by raising the CS pin */
   HAL_GPIO_WritePin((GPIO_TypeDef*) interface->cs_port, interface->cs_pin, GPIO_PIN_SET);
+
+  /* Utilize CMSIS access cache maintenance operations */
+  /* Bear in mind the ALIGNMENT with the Cache Line Size (here 32 bytes) */
+//  SCB_InvalidateDCache_by_Addr((uint32_t*)buf, ((len+31)/32)*32); /* Peri-to-Mem */
+//  SCB_InvalidateDCache_by_Addr((uint32_t*)(((uint32_t)buf) & ~(uint32_t)0x1F), ((len+31)/32)*32); /* Peri-to-Mem */
+//  SCB_CleanInvalidateDCache(); /* Mem-to-Peri */
+//  SCB_InvalidateDCache();
 
 //  ksz8851_show_packet_headers(interface, (uint8_t*) buf);
 
@@ -973,8 +1088,16 @@ void ksz8851_fifo_write(struct KSZ8851_INTERFACE *interface, uint8_t *buf, uint1
   /* Cache clean: the operation writes back dirty cache lines to the memory (an operation sometimes called a flush). */
   /* Bear in mind the ALIGNMENT with the Cache Line Size (here 32 bytes) */
   /* Clean D-cache */
+//  SCB_CleanDCache_by_Addr((uint32_t*)buf, ((len+31)/32)*32); /* Mem-to-Peri */
   /* Make sure the address is 32-byte aligned and add 32-bytes to length, in case it overlaps cacheline */
   SCB_CleanDCache_by_Addr((uint32_t*)(((uint32_t)buf) & ~(uint32_t)0x1F), len + 32); /* Mem-to-Peri */
+//  __DSB();
+//  SCB_InvalidateDCache_by_Addr((uint32_t*)buf, len); /* Peri-to-Mem */
+//  if (interface->hspi->Instance == SPI1)
+//  {
+//      SPI1->IFCR |= SPI_IFCR_EOTC;
+////      SPI1->SR &= ~SPI_SR_TXC;
+//  }
 
   clr_spi_irq(interface);
   clr_dma_tx_ended(interface);
@@ -991,6 +1114,13 @@ void ksz8851_fifo_write(struct KSZ8851_INTERFACE *interface, uint8_t *buf, uint1
   wait_dma_tx_ended(interface); // wait for dmx tx complete, but wait for SPI interrupt seems sufficient
   wait_spi_irq(interface);
 
+  /* Additional delay after DMA-end interrupt occurred */
+  /* This causes the required delay before lifting CS, minimum iterations = 4500 */
+  /* Note: No matter hdma_spi4_tx.Init.FIFOMode = DMA_FIFOMODE_ENABLE; or disable */
+//  for (uint16_t i = 0; i < 6000; i++)
+//  {
+//    __NOP();
+//  }
 #else
   /* Perform blocking DMA SPI transfer. Discard function returned value. TODO: handle it? */
   errorcode = HAL_SPI_Transmit(interface->hspi, (uint8_t*) buf, len, 2000);
@@ -1131,33 +1261,121 @@ void ksz8851_AllRegistersDump(struct KSZ8851_INTERFACE *interface)
 void ksz8851_RegistersDump(struct KSZ8851_INTERFACE *interface)
 {
   dmc_puts("##################### SPECIAL REGISTER DUMP ######################\n");
-  printf("MARL  [0x%02X]=0x%04X\n", REG_MAC_ADDR_0, ksz8851_reg_read(interface, REG_MAC_ADDR_0));
-  printf("MARM  [0x%02X]=0x%04X\n", REG_MAC_ADDR_2, ksz8851_reg_read(interface, REG_MAC_ADDR_2));
-  printf("MARH  [0x%02X]=0x%04X\n", REG_MAC_ADDR_4, ksz8851_reg_read(interface, REG_MAC_ADDR_4));
-  printf("OBCR  [0x%02X]=0x%04X\n", REG_BUS_CLOCK_CTRL, ksz8851_reg_read(interface, REG_BUS_CLOCK_CTRL));
-  printf("GRR   [0x%02X]=0x%04X\n", REG_RESET_CTRL, ksz8851_reg_read(interface, REG_RESET_CTRL));
-  printf("TXCR  [0x%02X]=0x%04X\n", REG_TX_CTRL, ksz8851_reg_read(interface, REG_TX_CTRL));
-  printf("RXCR1 [0x%02X]=0x%04X\n", REG_RX_CTRL1, ksz8851_reg_read(interface, REG_RX_CTRL1));
-  printf("RXCR2 [0x%02X]=0x%04X\n", REG_RX_CTRL2, ksz8851_reg_read(interface, REG_RX_CTRL2));
-  printf("TXMIR [0x%02X]=0x%04X\n", REG_TX_MEM_INFO, ksz8851_reg_read(interface, REG_TX_MEM_INFO));
+//  printf("MARL  [0x%02X]=0x%04X\n", REG_MAC_ADDR_0, ksz8851_reg_read(interface, REG_MAC_ADDR_0));
+  dmc_puts("MARL  [0x");
+  dmc_puthex2(REG_MAC_ADDR_0);
+  dmc_puts("]=0x");
+  dmc_puthex4cr(ksz8851_reg_read(interface, REG_MAC_ADDR_0));
+//  printf("MARM  [0x%02X]=0x%04X\n", REG_MAC_ADDR_2, ksz8851_reg_read(interface, REG_MAC_ADDR_2));
+  dmc_puts("MARM  [0x");
+  dmc_puthex2(REG_MAC_ADDR_2);
+  dmc_puts("]=0x");
+  dmc_puthex4cr(ksz8851_reg_read(interface, REG_MAC_ADDR_2));
+//  printf("MARH  [0x%02X]=0x%04X\n", REG_MAC_ADDR_4, ksz8851_reg_read(interface, REG_MAC_ADDR_4));
+  dmc_puts("MARH  [0x");
+  dmc_puthex2(REG_MAC_ADDR_4);
+  dmc_puts("]=0x");
+  dmc_puthex4cr(ksz8851_reg_read(interface, REG_MAC_ADDR_4));
+//  printf("OBCR  [0x%02X]=0x%04X\n", REG_BUS_CLOCK_CTRL, ksz8851_reg_read(interface, REG_BUS_CLOCK_CTRL));
+  dmc_puts("OBCR  [0x");
+  dmc_puthex2(REG_BUS_CLOCK_CTRL);
+  dmc_puts("]=0x");
+  dmc_puthex4cr(ksz8851_reg_read(interface, REG_BUS_CLOCK_CTRL));
+//  printf("GRR   [0x%02X]=0x%04X\n", REG_RESET_CTRL, ksz8851_reg_read(interface, REG_RESET_CTRL));
+  dmc_puts("GRR   [0x");
+  dmc_puthex2(REG_RESET_CTRL);
+  dmc_puts("]=0x");
+  dmc_puthex4cr(ksz8851_reg_read(interface, REG_RESET_CTRL));
+//  printf("TXCR  [0x%02X]=0x%04X\n", REG_TX_CTRL, ksz8851_reg_read(interface, REG_TX_CTRL));
+  dmc_puts("TXCR  [0x");
+  dmc_puthex2(REG_TX_CTRL);
+  dmc_puts("]=0x");
+  dmc_puthex4cr(ksz8851_reg_read(interface, REG_TX_CTRL));
+//  printf("RXCR1 [0x%02X]=0x%04X\n", REG_RX_CTRL1, ksz8851_reg_read(interface, REG_RX_CTRL1));
+  dmc_puts("RXCR1 [0x");
+  dmc_puthex2(REG_RX_CTRL1);
+  dmc_puts("]=0x");
+  dmc_puthex4cr(ksz8851_reg_read(interface, REG_RX_CTRL1));
+//  printf("RXCR2 [0x%02X]=0x%04X\n", REG_RX_CTRL2, ksz8851_reg_read(interface, REG_RX_CTRL2));
+  dmc_puts("RXCR2 [0x");
+  dmc_puthex2(REG_RX_CTRL2);
+  dmc_puts("]=0x");
+  dmc_puthex4cr(ksz8851_reg_read(interface, REG_RX_CTRL2));
+//  printf("TXMIR [0x%02X]=0x%04X\n", REG_TX_MEM_INFO, ksz8851_reg_read(interface, REG_TX_MEM_INFO));
+  dmc_puts("TXMIR [0x");
+  dmc_puthex2(REG_TX_MEM_INFO);
+  dmc_puts("]=0x");
+  dmc_puthex4cr(ksz8851_reg_read(interface, REG_TX_MEM_INFO));
 #if (READ_UNSAFE_REGISTERS)
-  printf("RXFHSR[0x%02X]=0x%04X\n", REG_RX_FHR_STATUS, ksz8851_reg_read(interface, REG_RX_FHR_STATUS));
+//  printf("RXFHSR[0x%02X]=0x%04X\n", REG_RX_FHR_STATUS, ksz8851_reg_read(interface, REG_RX_FHR_STATUS));
+  dmc_puts("RXFHSR[0x");
+  dmc_puthex2(REG_RX_FHR_STATUS);
+  dmc_puts("]=0x");
+  dmc_puthex4cr(ksz8851_reg_read(interface, REG_RX_FHR_STATUS));
 #endif
-  printf("TXQCR [0x%02X]=0x%04X\n", REG_TXQ_CMD, ksz8851_reg_read(interface, REG_TXQ_CMD));
-  printf("RXQCR [0x%02X]=0x%04X\n", REG_RXQ_CMD, ksz8851_reg_read(interface, REG_RXQ_CMD));
-  printf("TXFDPR[0x%02X]=0x%04X\n", REG_TX_ADDR_PTR, ksz8851_reg_read(interface, REG_TX_ADDR_PTR));
-  printf("RXFDPR[0x%02X]=0x%04X\n", REG_RX_ADDR_PTR, ksz8851_reg_read(interface, REG_RX_ADDR_PTR));
-  printf("IER   [0x%02X]=0x%04X\n", REG_INT_ENABLE, ksz8851_reg_read(interface, REG_INT_ENABLE));
-  printf("ISR   [0x%02X]=0x%04X\n", REG_INT_STATUS, ksz8851_reg_read(interface, REG_INT_STATUS));
-  printf("RXFCTR[0x%02X]=0x%04X\n", KS_RXFCTR, ksz8851_reg_read(interface, KS_RXFCTR));
+//  printf("TXQCR [0x%02X]=0x%04X\n", REG_TXQ_CMD, ksz8851_reg_read(interface, REG_TXQ_CMD));
+  dmc_puts("TXQCR [0x");
+  dmc_puthex2(REG_TXQ_CMD);
+  dmc_puts("]=0x");
+  dmc_puthex4cr(ksz8851_reg_read(interface, REG_TXQ_CMD));
+//  printf("RXQCR [0x%02X]=0x%04X\n", REG_RXQ_CMD, ksz8851_reg_read(interface, REG_RXQ_CMD));
+  dmc_puts("RXQCR [0x");
+  dmc_puthex2(REG_RXQ_CMD);
+  dmc_puts("]=0x");
+  dmc_puthex4cr(ksz8851_reg_read(interface, REG_RXQ_CMD));
+//  printf("TXFDPR[0x%02X]=0x%04X\n", REG_TX_ADDR_PTR, ksz8851_reg_read(interface, REG_TX_ADDR_PTR));
+  dmc_puts("TXFDPR[0x");
+  dmc_puthex2(REG_TX_ADDR_PTR);
+  dmc_puts("]=0x");
+  dmc_puthex4cr(ksz8851_reg_read(interface, REG_TX_ADDR_PTR));
+//  printf("RXFDPR[0x%02X]=0x%04X\n", REG_RX_ADDR_PTR, ksz8851_reg_read(interface, REG_RX_ADDR_PTR));
+  dmc_puts("RXFDPR[0x");
+  dmc_puthex2(REG_RX_ADDR_PTR);
+  dmc_puts("]=0x");
+  dmc_puthex4cr(ksz8851_reg_read(interface, REG_RX_ADDR_PTR));
+//  printf("IER   [0x%02X]=0x%04X\n", REG_INT_ENABLE, ksz8851_reg_read(interface, REG_INT_ENABLE));
+  dmc_puts("IER   [0x");
+  dmc_puthex2(REG_INT_ENABLE);
+  dmc_puts("]=0x");
+  dmc_puthex4cr(ksz8851_reg_read(interface, REG_INT_ENABLE));
+//  printf("ISR   [0x%02X]=0x%04X\n", REG_INT_STATUS, ksz8851_reg_read(interface, REG_INT_STATUS));
+  dmc_puts("ISR   [0x");
+  dmc_puthex2(REG_INT_STATUS);
+  dmc_puts("]=0x");
+  dmc_puthex4cr(ksz8851_reg_read(interface, REG_INT_STATUS));
+//  printf("RXFCTR[0x%02X]=0x%04X\n", KS_RXFCTR, ksz8851_reg_read(interface, KS_RXFCTR));
+  dmc_puts("RXFCTR[0x");
+  dmc_puthex2(KS_RXFCTR);
+  dmc_puts("]=0x");
+  dmc_puthex4cr(ksz8851_reg_read(interface, KS_RXFCTR));
 #if (READ_UNSAFE_REGISTERS)
-  printf("TXNTFSR[0x%02X]=0x%04X\n", TXNTFSR, ksz8851_reg_read(interface, TXNTFSR));
+//  printf("TXNTFSR[0x%02X]=0x%04X\n", TXNTFSR, ksz8851_reg_read(interface, TXNTFSR));
+  dmc_puts("TXNTFSR[0x");
+  dmc_puthex2(REG_TX_MEM_INFO);
+  dmc_puts("]=0x");
+  dmc_puthex4cr(ksz8851_reg_read(interface, REG_TX_MEM_INFO));
 #endif
   printf("CIDER [0x%02X]=0x%04X\n", REG_CHIP_ID, ksz8851_reg_read(interface, REG_CHIP_ID));
-  printf("PHYRR [0x%02X]=0x%04X\n", REG_PHY_RESET, ksz8851_reg_read(interface, REG_PHY_RESET));
-  printf("P1MBCR[0x%02X]=0x%04X\n", REG_PHY_CNTL, ksz8851_reg_read(interface, REG_PHY_CNTL));
-  printf("P1CR  [0x%02X]=0x%04X\n", REG_PORT_CTRL, ksz8851_reg_read(interface, REG_PORT_CTRL));
-  printf("#################################################################\n");
+  dmc_puts("CIDER [0x");
+  dmc_puthex2(REG_CHIP_ID);
+  dmc_puts("]=0x");
+  dmc_puthex4cr(ksz8851_reg_read(interface, REG_CHIP_ID));
+//  printf("PHYRR [0x%02X]=0x%04X\n", REG_PHY_RESET, ksz8851_reg_read(interface, REG_PHY_RESET));
+  dmc_puts("PHYRR [0x");
+  dmc_puthex2(REG_PHY_RESET);
+  dmc_puts("]=0x");
+  dmc_puthex4cr(ksz8851_reg_read(interface, REG_PHY_RESET));
+//  printf("P1MBCR[0x%02X]=0x%04X\n", REG_PHY_CNTL, ksz8851_reg_read(interface, REG_PHY_CNTL));
+  dmc_puts("P1MBCR[0x");
+  dmc_puthex2(REG_PHY_CNTL);
+  dmc_puts("]=0x");
+  dmc_puthex4cr(ksz8851_reg_read(interface, REG_PHY_CNTL));
+//  printf("P1CR  [0x%02X]=0x%04X\n", REG_PORT_CTRL, ksz8851_reg_read(interface, REG_PORT_CTRL));
+  dmc_puts("P1CR  [0x");
+  dmc_puthex2(REG_PORT_CTRL);
+  dmc_puts("]=0x");
+  dmc_puthex4cr(ksz8851_reg_read(interface, REG_PORT_CTRL));
+  dmc_puts("#################################################################\n");
 }
 
 uint16_t ksz8851_IntGet(struct KSZ8851_INTERFACE *interface)
@@ -1220,8 +1438,10 @@ void ksz8851_Enable(struct KSZ8851_INTERFACE *interface)
   // Function not used
   /* Enable interrupts */
   ksz8851_reg_write(interface, REG_INT_ENABLE, KSZ8851SNL_INT_ENABLE_MASK);
+
   /* Enable QMU Transmit */
   ksz8851_reg_setbits(interface, REG_TX_CTRL, TX_FLOW_CTRL_ENABLE);  /* TXCR */
+
   /* Enable QMU Receive */
   ksz8851_reg_setbits(interface, REG_RX_CTRL1, RX_FLOW_CTRL_RX_ENABLE);  /* RXCR1 */
 }
@@ -1277,8 +1497,16 @@ void ksz8851_Send(struct KSZ8851_INTERFACE *interface, uint8_t *pTXData, uint16_
   if (txmir < txPacketLength)
   {
     // QMU TXQ does not have enough space
+//    dmc_puts(TERMINAL_YELLOW);
+//    dmc_puts("Wait until QMU TXQ space is available... ");
+
+//    KSZ8851SNL_ExceptionHandler(INFO, "I will wait until mem is available\n");
+
     /* Enable TX memory available monitor */
     ksz8851_reg_write(interface, REG_TX_TOTAL_FRAME_SIZE, txPacketLength); /* TXNTFSR */
+//    data = ksz8851_reg_read(interface, REG_TXQ_CMD);         /* TXQCR */
+//    data |= TXQ_MEM_AVAILABLE_INT;
+//    ksz8851_reg_write(interface, REG_TXQ_CMD, data);         /* TXQCR */
     ksz8851_reg_setbits(interface, REG_TXQ_CMD, TXQ_MEM_AVAILABLE_INT);  /* TXQCR */
 
     /* Wait until enough space is available */
@@ -1286,10 +1514,24 @@ void ksz8851_Send(struct KSZ8851_INTERFACE *interface, uint8_t *pTXData, uint16_
     {
       ;
     }
+//    while (1)
+//    {
+//      data = ksz8851_reg_read(interface, REG_INT_STATUS);  /* ISR */
+//      if (data & INT_TX_SPACE)
+//      {
+//        break;
+//      }
+//    }
+//    KSZ8851SNL_ExceptionHandler(INFO, "Done\n");
+//    dmc_puts("Done\n");
+//    dmc_puts(TERMINAL_DEFAULT);
 
     /* Clear flag */
     // Acknowledge (clear) INT_TX_SPACE Interrupt bit.
     // Note we have to set the bit in ISR to clear it!
+//    data = ksz8851_reg_read(interface, REG_INT_STATUS);  /* ISR */
+//    data |= INT_TX_SPACE;
+//    ksz8851_reg_write(interface, REG_INT_STATUS, data);  /* ISR */
     ksz8851_reg_setbits(interface, REG_INT_STATUS, INT_TX_SPACE);  /* ISR */
   }
 
@@ -1300,23 +1542,176 @@ void ksz8851_Send(struct KSZ8851_INTERFACE *interface, uint8_t *pTXData, uint16_
 
   /* Step 3 */
   /* Enable TXQ write access */
-=  ksz8851_reg_setbits(interface, REG_RXQ_CMD, RXQ_START);  /* RXQCR */
+//  data = ksz8851_reg_read(interface, REG_RXQ_CMD); /* RXQCR */
+//  data |= RXQ_START;            /* bit 3 or 0x0008 */
+//  ksz8851_reg_write(interface, REG_RXQ_CMD, data); /* RXQCR */
+  ksz8851_reg_setbits(interface, REG_RXQ_CMD, RXQ_START);  /* RXQCR */
 
+  // For debugging probe
+//  HAL_GPIO_WritePin(GPIOF, PF13_Test_Pin, GPIO_PIN_SET);
+//  HAL_GPIO_WritePin(GPIOF, PF13_Test_Pin, GPIO_PIN_SET);
+//  HAL_GPIO_WritePin(GPIOF, PF13_Test_Pin, GPIO_PIN_SET);
+//  HAL_GPIO_WritePin(GPIOF, PF13_Test_Pin, GPIO_PIN_RESET);
+
+  //  dmc_puts("Perform blocking SPI transfer\n");
+
+//  // 5 bytes
+//  outbuf[0] = FIFO_WRITE;
+//  outbuf[1] = (interface->frameId++ & FRAME_ID_MASK);
+//  outbuf[2] = 0;
+//  outbuf[3] = pTXLength & LSB_MASK;
+//  outbuf[4] = pTXLength >> MSB_POS;
+//  /* Perform blocking SPI transfer. */
+//  (void) HAL_SPI_Transmit(interface->hspi, (uint8_t*) outbuf, 5, 2000);
+
+//  // 4 bytes
+//  outbuf[0] = (interface->frameId++ & FRAME_ID_MASK) | TX_INT_on_COMPLETION >> MSB_POS;
+//  outbuf[1] = 0;
+//  outbuf[2] = pTXLength & LSB_MASK;
+//  outbuf[3] = pTXLength >> MSB_POS;
+//  for (uint16_t i = 0; i < pTXLength; i++)
+//  {
+//    pTXData2[i + 4] = pTXData[i];
+//  }
+//  pTXLength += 4;
 
   // Step 6
   // Write TXIC to the "control word" of the frame header. (0x8000)
+  // Number of SCLK for register access as following:
+  // Write frame to TXQ: CMD(8bits) + Frame Header(32bits) + Frame Data(8bits*N)
+  // Read frame from RXQ: CMD(8bits) + Dummy(32bits) + Frame Status(32bits) + Frame Data(8bits*N)
+//  pTXData[0] = FIFO_WRITE;
+//  pTXData[1] = (interface->frameId++ & FRAME_ID_MASK);
+////  pTXData[1] = (interface->frameId++ & FRAME_ID_MASK) | TX_INT_on_COMPLETION >> MSB_POS;
+//  pTXData[2] = 0;
+//  // Step 7
+//  // Write txPacketLength to the "byte count" of the frame header.
+//  uint16_t TXLen = pTXLength - 5;
+//  pTXData[3] = TXLen & LSB_MASK;
+//  pTXData[4] = TXLen >> MSB_POS;
+
+
+  // Write frame data pointer by pTxData to the QMU TXQ in BYTE until
+  // finished the full packet length (txPacketLength) in DWORD alignment "bytesToWrite"
+  /* Round to DWORD boundary, for example, the driver has to write up
+   * to 68 bytes if transmit frame size is 65 bytes. */
+//  uint16_t bytesToWrite = 4 * ((TXLen + 3) >> 2) + 5;
+//  int lengthInDWord=((pTXLength+3)>>2);
+//  int bytesToWrite=(lengthInDWord *4);
+//  dmc_putintcr(lengthInByte);
+
+  // https://community.st.com/s/article/FAQ-DMA-is-not-working-on-STM32H7-devices
+//  __DSB();
 
   ksz8851_fifo_write(interface, pTXData, pTXLength);
 
+
+
+
+//  uint16_t bytesToWrite = 4 * ((pTXLength + 3) >> 2);
+//
+//  // DMA is not working on STM32H7 devices
+//  // https://community.st.com/s/article/FAQ-DMA-is-not-working-on-STM32H7-devices
+//  /* ATTENTION: pad bytes are the bytes beyond buffer length (can be any rubbish value) */
+//  /* Perform non-blocking DMA SPI transfer. Discard function returned value! TODO: handle it? */
+////  (void) HAL_SPI_Transmit_DMA(interface->spi, (uint8_t*) pTXData, lengthInByte);
+//  /* an DMA1_Stream4_IRQHandler interrupt will occur */
+//
+//  /* Starting the SPI transfer operation by pulling the CS pin low */
+//  HAL_GPIO_WritePin((GPIO_TypeDef*) interface->cs_port, interface->cs_pin, GPIO_PIN_RESET);
+//
+//uint8_t TxHeader[5];
+//// Step 6
+//// Write TXIC to the "control word" of the frame header. (0x8000)
+//// Number of SCLK for register access as following:
+//// Write frame to TXQ: CMD(8bits) + Frame Header(32bits) + Frame Data(8bits*N)
+//// Read frame from RXQ: CMD(8bits) + Dummy(32bits) + Frame Status(32bits) + Frame Data(8bits*N)
+//TxHeader[0] = FIFO_WRITE;
+//TxHeader[1] = (interface->frameId++ & FRAME_ID_MASK);
+////  pTXData[1] = (frameId++ & FRAME_ID_MASK) | TX_INT_on_COMPLETION >> MSB_POS;
+//TxHeader[2] = 0;
+//// Step 7
+//// Write txPacketLength to the "byte count" of the frame header.
+//TxHeader[3] = pTXLength & LSB_MASK;
+//TxHeader[4] = pTXLength >> MSB_POS;
+//
+//  /* Perform blocking SPI transfer. */
+//  (void) HAL_SPI_TransmitReceive(interface->hspi, (uint8_t*) TxHeader, (uint8_t*) outbuf, 5, 2000);
+//
+//#if (KSZ8851_USE_TX_DMA == 0)
+////  dmc_puts("Perform blocking SPI transfer\n");
+//
+//  /* Perform blocking SPI transfer. */
+//  (void) HAL_SPI_TransmitReceive(interface->hspi, (uint8_t*) pTXData, (uint8_t*) outbuf, bytesToWrite, 2000);
+////  dmc_puts("Done\n");
+//#else
+//  clr_dma_tx_ended(interface);
+//  dmc_puts("Perform non-blocking DMA SPI TX transfer\n");
+//  /* Perform non-blocking DMA SPI transfer. Discard function returned value! TODO: handle it? */
+//  (void) HAL_SPI_TransmitReceive_DMA(interface->hspi, (uint8_t*) pTXData, (uint8_t*) outbuf, bytesToWrite);
+//  /* For SPI1_TX an DMA1_Stream0_IRQHandler interrupt will occur */
+//  /* For SPI1_RX an DMA1_Stream1_IRQHandler interrupt will occur */
+//  /* For SPI4_RX an DMA1_Stream2_IRQHandler interrupt will occur */
+//  /* For SPI4_TX an DMA1_Stream3_IRQHandler interrupt will occur */
+//  dmc_puts("Done\n");
+//  wait_dma_tx_ended(interface);
+//  dmc_puts("Done\n");
+//#endif
+//
+//    /* Stop the SPI transfer operation, terminate the operation by raising the CS pin */
+//  HAL_GPIO_WritePin((GPIO_TypeDef*) interface->cs_port, interface->cs_pin, GPIO_PIN_SET);
+
+
+
+
+  /* Start the SPI Transfer */
+//  ETHSPI_StartWriteFIFO();
+  /* Send the frame header info */
+//  ETHSPI_WriteFifoContinue(4, outbuf);
+
+  /* Send the actual data */
+//  ETHSPI_WriteFifoContinue(pTXLength, pTXData);
+
+  /* Send dummy bytes to align data to DWORD */
+//  ETHSPI_WriteFifoContinue(KSZ8851SNL_DwordAllignDiff(pTXLength), pTXData);
+
+  /* Stop the SPI Transfer */
+//  ETHSPI_StopFIFO();
+
   /* Step 12 */
   /* Disable TXQ write access */
+//  data = ksz8851_reg_read(interface, REG_RXQ_CMD); /* RXQCR */
+//  data &= ~RXQ_START;           /* bit 3 or 0x0008 */
+//  ksz8851_reg_write(interface, REG_RXQ_CMD, data); /* RXQCR */
   ksz8851_reg_clrbits(interface, REG_RXQ_CMD, RXQ_START);  /* RXQCR */
 
   /* Step 12.1 */
   /* Start TXQ Manual Enqueue */
+//  data = ksz8851_reg_read(interface, REG_TXQ_CMD); /* RXQCR */
+//  data |= TXQ_ENQUEUE;          /* bit 0 or 0x0001 */
+//  ksz8851_reg_write(interface, REG_TXQ_CMD, data); /* RXQCR */
   ksz8851_reg_setbits(interface, REG_TXQ_CMD, TXQ_ENQUEUE);  /* RXQCR */
 
+  // Jack 2019-04-25 simplified the code below, but moved it to the top of this function
+  /* Wait until transmit command clears */
+//  while (ksz8851_reg_read(interface, REG_TXQ_CMD) & TXQ_ENQUEUE)
+//  {
+//    ;
+//  }
+
+//  /* Wait until transmit command clears */
+//  while (1)
+//  {
+//    data = ksz8851_reg_read(interface, REG_TXQ_CMD); /* RXQCR */
+//    if (!(data & TXQ_ENQUEUE))        /* bit 0 or 0x0001 */
+//    {
+//      break;
+//    }
+//  }
+
   /* Step 13 */
+  /* Enable interrupts */
+//  ksz8851_reg_write(interface, REG_INT_ENABLE, INT_MASK_EXAMPLE);
   /* Enable interrupts */
   ksz8851_IntEnable(interface);
 }
@@ -1337,16 +1732,10 @@ void ksz8851_Send(struct KSZ8851_INTERFACE *interface, uint8_t *pTXData, uint16_
 uint16_t ksz8851_Receive(struct KSZ8851_INTERFACE *interface, uint8_t *pRXData, uint16_t pRXLength)
 {
   uint16_t data;
-  uint16_t rxFrameCount;
-  uint16_t rxStatus;
-  uint16_t rxPacketLength;
-//  uint16_t frameLength;
   uint16_t bytesToRead;
-//  uint8_t outbuf[4096];
 
   // Step 1
-  /* RX step1: read and discard interrupt status for INT_RX flag. */
-  // Read value from ISR to check if RXIS ‘Receive Interrupt’ is set. If not set, Exit.
+  // Read value from ISR to check if RXIS 'Receive Interrupt' is set. If not set, Exit.
   data = ksz8851_reg_read(interface, REG_INT_STATUS);  /* ISR */
   if (!(data & IRQ_RXI))  /* INT_RX_DONE */
   {
@@ -1358,125 +1747,151 @@ uint16_t ksz8851_Receive(struct KSZ8851_INTERFACE *interface, uint8_t *pRXData, 
   ksz8851_IntDisable(interface);
 
   // Step 3
-  /* RX step3: clear INT_RX flag. */
   // Acknowledge (clear) RXIS Receive Interrupt bit.
   // Note we have to set the bit in ISR to clear it!
   ksz8851_reg_setbits(interface, REG_INT_STATUS, IRQ_RXI);
 
-  // When receive interrupt occurred and software driver writes "1" to clear
-  // the RX interrupt in ISR register;
+  // Note:
+  // When receive interrupt occurred and software driver writes "1" to clear the RX interrupt in ISR register,
   // the KSZ8851 will update Receive Frame Counter (RXFCTR) Register for this interrupt.
 
   // Step4
-  /* RX step4-5: check for received frames. */
-  // Read current total amount of received frame count from RXFCTR, and save in ‘rxFrameCount’.
+  // Read current total amount of received frame count from REG_RX_FRAME_CNT_THRES[15-8], and save in 'rxFrameCount'.
   /* Read the frame count and threshold register */
   data = ksz8851_reg_read(interface, REG_RX_FRAME_CNT_THRES);  /* RXFCTR */
-  /* Extract the actual number of frames from RX_FRAME_THRES_REG*/
-  rxFrameCount = (data >> MSB_POS) & 0x00ff;
-  // When software driver reads back Receive Frame Count (RXFCTR) Register;
+  /* Extract RXFCTR[15-8] the actual number of frames from RX_FRAME_THRES_REG */
+  interface->rxFrameCount = (data >> MSB_POS) & LSB_MASK;
+
+  // Note:
+  // When software driver reads back Receive Frame Count (RXFCTR) Register,
   // the KSZ8851 will update both Receive Frame Header Status
   // and Byte Count Registers (RXFHSR/RXFHBCR).
 
-  if (rxFrameCount == 0)
+  if (interface->rxFrameCount == 0)
   {
     /* Enable interrupts */
     ksz8851_IntEnable(interface);
     return 0;
   }
 
+//  dmc_puts(TERMINAL_MAGENTA);
+//  dmc_puts("rxFrameCount: ");
+//  dmc_putintcr(rxFrameCount);
+//  dmc_puts(TERMINAL_DEFAULT);
+
   /* Now rxFrameCount != 0 */
   /* Don't break Micrel state machine, wait for a free descriptor first! */
   // Step 5
   // Repeatedly reading all frames from RXQ.
   // If rxFrameCount <= 0, goto step 24
-  while (rxFrameCount > 0)
+  while (interface->rxFrameCount > 0)
   {
     // Step 23
     // Jack: we do this first, so we can use the "continue" statement
     // to skip the rest of the iteration, and continue to next frame
-    rxFrameCount--;
+    interface->rxFrameCount--;
 
-    // When software driver reads back both Receive Frame Header Status and Byte Count Registers (RXFHSR/RXFHBCR);
-    // the KSZ8851 will update next receive frame header status and byte count registers (RXFHSR/RXFHBCR).
+    // Note:
+    // When software driver reads back both Receive Frame Header Status (RXFHSR)
+    // and Byte Count Registers (RXFHBCR), the KSZ8851 will update the next
+    // receive frame header status and byte count registers (RXFHSR/RXFHBCR).
 
     // Step 6
-    /* RX step6: get RX packet status. */
-    // Read received frame status from RXFHSR to check if this is a good frame.
+    /* Get RX packet status. */
+    // Read received frame status from RXFHSR to 'rxStatus' array variable.
+    // Check if this is a good frame.
     // This register (read only) indicates the current received frame header status information.
     /* Read the received frame status */
-    rxStatus = ksz8851_reg_read(interface, REG_RX_FHR_STATUS);   /* RXFHSR */
+    interface->rxStatus = ksz8851_reg_read(interface, REG_RX_FHR_STATUS);   /* RXFHSR */
+//    dmc_puts("rxStatus: ");
+//    dmc_puthex4cr(interface->rxStatus);
 
     // Step 7
+    /* Read frame length. */
     // Read received frame byte size from RXFHBCR to get this received frame length
     // (4-byte CRC, and extra 2-byte due to "IP Header Two-Byte Offset Enable" are included),
     // and store into rxPacketLength variable.
+    /* Frame length includes 4 byte CRC and extra 2 byte IP Header */
+    data = ksz8851_reg_read(interface, REG_RX_FHR_BYTE_CNT); /* RXFHBCR */
+    interface->rxLength = data & RX_BYTE_CNT_MASK;   /* Mask the 12 bits 0x0FFF */
+//    dmc_puts("rxPacketLength: ");
+//    dmc_putintcr(rxPacketLength);
 
     /* Check the consistency of the frame */
-    // if rxStatus’s bit_15 is 0, or
-    // if rxStatus’s bit_0, bit_1, bit_2, bit_4, bit_10, bit_11, bit_12, bit_13 are 1,
+    // if rxStatus's bit_15 is 0, or
+    // if rxStatus's bit_0, bit_1, bit_2, bit_4, bit_10, bit_11, bit_12, bit_13 are 1,
     // received an error frame, goto step 8,
     // else received a good frame, goto step 9.
     // if rxPacketLength <= 0, goto step 8;
     // else goto step 9;
     // CHECKSUM_VALID_FRAME_MASK = 0011 1100 0001 0111 = 0x3C17 (bits 13,12,11,10,4,2,1,0)
-    if ((!(rxStatus & RX_VALID)) || (rxStatus & RX_ERRORS))
+    if ((!(interface->rxStatus & RX_VALID)) ||
+        (interface->rxStatus & RX_ERRORS) ||
+        (interface->rxLength == 0))
     {
+
+
       // RX packet error!
       /* Issue the Release error frame command */
-
+//      ksz8851_ReleaseIncosistentFrame(interface);
+//      data = ksz8851_reg_read(interface, REG_RX_FRAME_CNT_THRES); /* RXFCTR */
+//      /* Extract the actual number of frames from RX_FRAME_THRES_REG*/
+//      interface->rxFrameCount = (data >> MSB_POS) & 0x00ff;
+      // When software driver reads back Receive Frame Count (RXFCTR) Register;
+      // the KSZ8851 will update both Receive Frame Header Status
+      // and Byte Count Registers (RXFHSR/RXFHBCR).
+      // Step 8
+      /* Drop packet if len is invalid or no descriptor available. */
       // Release the current error frame from RXQ
       ksz8851_reg_setbits(interface, REG_RXQ_CMD, RXQ_CMD_FREE_PACKET);
+
+//      if (interface->rxFrameCount == 0)
+//      {
+//        /* Enable interrupts */
+//        ksz8851_ReleaseIncosistentFrame(interface);
+//        ksz8851_IntEnable(interface);
+//        return 0;
+//      }
 
       /* continue to next frame */
        continue;
     }
     else
     {
-      // Step 7
-      /* RX step7: read frame length. */
-      // Read received frame byte size from RXFHBCR to get this received frame length
-      // (4-byte CRC, and extra 2-byte due to ‘IP Header Two-Byte Offset Enable’are included),
-      // and store into rxPacketLength variable.
-      /* Read the byte size of the received frame */
-      /* Get current frame byte size */
-      /* Frame length includes 4 byte CRC and extra 2 byte IP Header */
-      rxPacketLength = ksz8851_reg_read(interface, REG_RX_FHR_BYTE_CNT) & RX_BYTE_CNT_MASK;  /* RXFHBCR */
-
-//      /* RX step8: Drop packet if len is invalid or no descriptor available. */
-      if(rxPacketLength == 0)
-      {
-        // RX bad len!
-
-        // Release the current error frame from RXQ
-        ksz8851_reg_setbits(interface, REG_RXQ_CMD, RXQ_CMD_FREE_PACKET);
-
-        /* continue to next frame */
-        continue;
-      }
+//      dmc_puts(TERMINAL_MAGENTA);
+//      dmc_puts("rxFrameCount: ");
+//      dmc_putintcr(interface->rxFrameCount);
+//      dmc_puts("rxLength    : ");
+//      dmc_putintcr(interface->rxLength);
+//      dmc_puts(TERMINAL_DEFAULT);
 
       // Step 17
       // Read frame data to system memory pointer by pRxData from the QMU RXQ in BYTE until
-      // finished the full packet length (rxPacketLength) in DWORD alignment ‘lengthInByte.
+      // finished the full packet length (rxPacketLength) in DWORD alignment 'lengthInByte.
       /* Round to DWORD boundary
        * For example, the driver has to read up to 68 bytes if received frame size is 65 bytes. */
       // Jack: read a bit more because of missing bytes
       // Read frame from RXQ: CMD(8bits) + Dummy(32bits) + Frame Status(32bits) + Frame Data(8bits*N)
-      bytesToRead = 4 * ((rxPacketLength + 3) >> 2);
+      bytesToRead = 4 * ((interface->rxLength + 3) >> 2);
+//      dmc_puts("bytesToRead: ");
+//      dmc_putintcr(bytesToRead);
 
-      if ((bytesToRead > pRXLength) || (rxPacketLength <= 4))
+      if ((bytesToRead > pRXLength) || (interface->rxLength <= 4))
       {
         /* Issue the Release error frame command */
+//        ksz8851_ReleaseIncosistentFrame(interface);
 
         // Release the current error frame from RXQ
         ksz8851_reg_setbits(interface, REG_RXQ_CMD, RXQ_CMD_FREE_PACKET);
 
-        /* continue to next frame */
+//        ksz8851_IntEnable(interface);
+//        return 0;
+//        /* continue to next frame */
         continue;
       }
 
       // Step 9
-      /* RX step9: reset RX frame pointer. */
+      /* Reset RX frame pointer */
       // Reset QMU RXQ frame pointer to zero with auto increment.
 //      ksz8851_reg_write(interface, REG_RX_ADDR_PTR, ADDR_PTR_AUTO_INC);
       /* Set QMU RXQ frame pointer to start of packet data. Note
@@ -1496,7 +1911,7 @@ uint16_t ksz8851_Receive(struct KSZ8851_INTERFACE *interface, uint8_t *pRXData, 
 //      ksz8851_reg_clrbits(interface, REG_RX_ADDR_PTR, ADDR_PTR_MASK);
 
       // Step 10
-      /* RX step10: start RXQ read access. */
+      /* Start RXQ read access */
       // Start QMU DMA transfer operation to read frame data from the RXQ to host CPU.
       // When this bit is written as 1, the KSZ8851SNL allows a DMA operation
       // from the host CPU to access either read RXQ frame buffer or write TXQ
@@ -1507,24 +1922,237 @@ uint16_t ksz8851_Receive(struct KSZ8851_INTERFACE *interface, uint8_t *pRXData, 
       // access the rest of registers.
       /* Set bit 3 of RXQCR to start QMU DMA transfer operation */
       /* Must not access other registers once starting QMU DMA transfer operation */
-//      data = ksz8851_reg_read(interface, REG_RXQ_CMD);
-//      data |= RXQ_START;
-//      ksz8851_reg_write(interface, REG_RXQ_CMD, data);
 //      ksz8851_reg_setbits(interface, REG_RXQ_CMD, RXQ_START);  /* RXQCR */
       ksz8851_reg_setbits(interface, REG_RXQ_CMD, RXQ_START | RXQ_AUTO_DEQUEUE);  /* RXQCR */
 
 //      /* Read the whole Ethernet frame */
-      rxPacketLength = ksz8851_fifo_read(interface, pRXData, bytesToRead);
+//      ksz8851_fifo_read(interface, pRXData, bytesToRead);
+
+      // Step 13
+      // Must read out dummy 4-byte.
+//      dmc_puts("Step 13\n");
+//      uint8_t Dummy[4];
+//      (void) HAL_SPI_Receive(interface->hspi, (uint8_t*) Dummy, 4, 2000);
+
+//      // Step 14
+//      // Read out 2-byte 'Status Word' of frame header from the QMU RXQ.
+//      dmc_puts("Step 14\n");
+//      uint8_t StatusWord[2];
+//      (void) HAL_SPI_Receive(interface->hspi, (uint8_t*) StatusWord, 2, 2000);
+//
+//      // Step 15
+//      // Read out 2-byte 'Byte Count' of frame header from the QMU RXQ.
+//      dmc_puts("Step 15\n");
+//      uint8_t ByteCount[2];
+//      (void) HAL_SPI_Receive(interface->hspi, (uint8_t*) ByteCount, 2, 2000);
+//      dmc_puts("ByteCount: ");
+//      dmc_puthex2(ByteCount[1]);
+//      dmc_puthex2cr(ByteCount[0]);
+
+      // Step 18
+      // Read 1-byte of frame data to system memory pointer by pRxData from
+      // the QMU RXQ. Increase pRxData pointer by 1.
+      /* Perform blocking SPI transfer. */
+//      dmc_puts("Perform blocking SPI transfer.\n");
+//      (void) HAL_SPI_Receive(interface->hspi, (uint8_t*) pRXData, bytesToRead, 2000);
+      // Number of SCLK for register access as following:
+      // Write frame to TXQ: CMD(8bits) + Frame Header(32bits) + Frame Data(8bits*N)
+      // Read frame from RXQ: CMD(8bits) + Dummy(32bits) + Frame Status(32bits) + Frame Data(8bits*N)
+      /* Write RXQ command phase */
+//      memset(outbuf, 0, bytesToRead);
+//      outbuf[0] = FIFO_READ;
+      /* Dummy 4 byte, status word 2 byte, byte count 2 byte, IP header 2 byte */
+      /* Buffer allocation = number of bytes to receive */
+//      bytesToRead += 12;
+
+//      bytesToRead += 8;
+
+//dmc_putintcr(bytesToRead);
+//      memset(pRXData, 0x55, bytesToRead);
+
+//      ksz8851_fifo_read(interface, pRXData, rxPacketLength);
+//      memset(pRXData, 0, bytesToRead);
+      /* Read the whole Ethernet frame */
+      interface->rxLength = ksz8851_fifo_read(interface, pRXData, bytesToRead);
+
+
+
+
+
+//      /* Starting the SPI transfer operation by pulling the CS pin low */
+//      HAL_GPIO_WritePin((GPIO_TypeDef*) interface->cs_port, interface->cs_pin, GPIO_PIN_RESET);
+//
+//#if (KSZ8851_USE_RX_DMA == 0)
+//      /* Perform blocking SPI transfer. */
+//      (void) HAL_SPI_TransmitReceive(interface->hspi, (uint8_t*) outbuf, (uint8_t*) outbuf, 15, 2000);
+//      bytesToRead -= 15;
+//
+////      dmc_puts("Perform blocking SPI transfer\n");
+//      (void) HAL_SPI_Receive(interface->hspi, (uint8_t*) pRXData, bytesToRead, 2000);
+////      dmc_puts("Done\n");
+//#else
+//      /* Perform blocking SPI transfer. */
+//      (void) HAL_SPI_TransmitReceive(interface->hspi, (uint8_t*) outbuf, (uint8_t*) outbuf, 15, 2000);
+//      bytesToRead -= 15;
+//
+//      clr_dma_rx_ended(interface);
+//      dmc_puts("Perform non-blocking DMA SPI RX transfer\n");
+//      /* Perform non-blocking DMA SPI transfer. Discard function returned value! TODO: handle it? */
+////      (void) HAL_SPI_TransmitReceive_DMA(interface->hspi, (uint8_t*) outbuf, (uint8_t*) pRXData, bytesToRead);
+//      (void) HAL_SPI_Receive_DMA(interface->hspi, (uint8_t*) pRXData, bytesToRead);
+//      /* For SPI1_TX an DMA1_Stream0_IRQHandler interrupt will occur */
+//      /* For SPI1_RX an DMA1_Stream1_IRQHandler interrupt will occur */
+//      /* For SPI4_RX an DMA1_Stream2_IRQHandler interrupt will occur */
+//      /* For SPI4_TX an DMA1_Stream3_IRQHandler interrupt will occur */
+//      dmc_puts("Done\n");
+//      wait_dma_rx_ended(interface);
+//      dmc_puts("Done\n");
+//#endif
+//
+//      /* Stop the SPI transfer operation, terminate the operation by raising the CS pin */
+//      HAL_GPIO_WritePin((GPIO_TypeDef*) interface->cs_port, interface->cs_pin, GPIO_PIN_SET);
+
+
+
 
       // Step 21
       // Stop QMU DMA transfer operation.
-//      data = ksz8851_reg_read(interface, REG_RXQ_CMD);
-//      data &= ~RXQ_START;
-//      ksz8851_reg_write(interface, REG_RXQ_CMD, data);
       ksz8851_reg_clrbits(interface, REG_RXQ_CMD, RXQ_START);
 
+      // Step 22
+      // Pass this received frame to the upper layer protocol stack.
+      // Jack: may print it if it makes sense...
+      // 192.168.25.xxx
+//      uint8_t found = 0;
+////      for (uint8_t i = 0; i < 30; i++)
+////      {
+////        if ((pRXData[i] == 0xC0) && (pRXData[i+1] == 0xA8) && (pRXData[i+2] == 0xA8))
+////        {
+////          found = 1;
+////        }
+////      }
+//
+//      uint16_t offset1 = 0;
+//      uint16_t offset2 = 0;
+//
+//      for (uint16_t i = 30; i < 64; i++)
+//      {
+//        if ((pRXData[i] == 0xC0) && (pRXData[i+1] == 0xA8) && (pRXData[i+2] == 0x19))
+//        {
+//          if (offset1 == 0)
+//          {
+//            offset1 = i;
+//          }
+//          else
+//          {
+//            offset2 = i;
+//            found = 1;
+//            break;
+//          }
+//        }
+//      }
+//
+////      found = 1;
+//      if (found)
+//      {
+////        dmc_puthex2(pRXData[offset++]);
+////        dmc_putc(':');
+////        dmc_puthex2(pRXData[offset++]);
+////        dmc_putc(':');
+////        dmc_puthex2(pRXData[offset++]);
+////        dmc_putc(':');
+////        dmc_puthex2(pRXData[offset++]);
+////        dmc_putc(':');
+////        dmc_puthex2(pRXData[offset++]);
+////        dmc_putc(':');
+////        dmc_puthex2(pRXData[offset++]);
+////        dmc_putc(' ');
+//        dmc_putint(pRXData[offset1++]);
+//        dmc_putc('.');
+//        dmc_putint(pRXData[offset1++]);
+//        dmc_putc('.');
+//        dmc_putint(pRXData[offset1++]);
+//        dmc_putc('.');
+//        uint8_t ipa4 = pRXData[offset1++];
+//        dmc_putint(ipa4);
+//        dmc_putc('\n');
+//
+////        dmc_puthex2(pRXData[offset++]);
+////        dmc_putc(':');
+////        dmc_puthex2(pRXData[offset++]);
+////        dmc_putc(':');
+////        dmc_puthex2(pRXData[offset++]);
+////        dmc_putc(':');
+////        dmc_puthex2(pRXData[offset++]);
+////        dmc_putc(':');
+////        dmc_puthex2(pRXData[offset++]);
+////        dmc_putc(':');
+////        dmc_puthex2(pRXData[offset++]);
+////        dmc_putc(' ');
+//        dmc_putint(pRXData[offset2++]);
+//        dmc_putc('.');
+//        dmc_putint(pRXData[offset2++]);
+//        dmc_putc('.');
+//        dmc_putint(pRXData[offset2++]);
+//        dmc_putc('.');
+//        uint8_t ipb4 = pRXData[offset2++];
+//        dmc_putint(ipb4);
+//        dmc_putc('\n');
+//
+//        uint8_t ip4 = 238;
+//        if ((ipa4 == ip4) || (ipb4 == ip4))
+//        {
+//          dmc_puts(TERMINAL_YELLOW);
+//        }
+//        else
+//        {
+//          dmc_puts(TERMINAL_CYAN);
+//        }
+//        for (uint16_t i = 0; i < bytesToRead; i++)
+//        {
+//          dmc_puthex2(pRXData[i]);
+//          dmc_putc(' ');
+//        }
+//        dmc_putc('\n');
+//        uint8_t pcr = 0;
+//        for (uint16_t i = 0; i < bytesToRead; i++)
+//        {
+//          if ((pRXData[i] >= 0x20) && (pRXData[i] < 0x7F))
+//          {
+//            dmc_putc(pRXData[i]);
+//            pcr = 1;
+//          }
+//        }
+//        if (pcr)
+//        {
+//          dmc_putc('\n');
+//        }
+//        dmc_puts(TERMINAL_DEFAULT);
+//      }
+//      break;
+//      continue;
     }
   }
+
+
+//  data = ksz8851_reg_read(interface, REG_INT_ENABLE);  /* ISR */
+//  dmc_puts("REG_INT_ENABLE ");
+//  dmc_puthex4cr(data);
+
+#if (FLUSH_QUEUE)
+  /* ksz8851snl_reset_rx */
+  /* REG_RX_CTRL1 = RXCR1 */
+  /* RX_CTRL_ENABLE = 0x0001 */
+  /* RX_CTRL_FLUSH_QUEUE = 0x8000 */
+  /* Disable receive */
+  ksz8851_reg_clrbits(interface, REG_RX_CTRL1, RX_CTRL_ENABLE | RX_CTRL_FLUSH_QUEUE);
+  /* Clear receive queue memory and reset RX frame pointer */
+  ksz8851_reg_setbits(interface, REG_RX_CTRL1, RX_CTRL_FLUSH_QUEUE);
+  /* Clear this bit to normal operation */
+  ksz8851_reg_clrbits(interface, REG_RX_CTRL1, RX_CTRL_FLUSH_QUEUE);
+  /* Enable receive */
+  ksz8851_reg_setbits(interface, REG_RX_CTRL1, RX_CTRL_ENABLE);
+#endif
 
   // Step 24
   /* Enable interrupts */
@@ -1533,7 +2161,90 @@ uint16_t ksz8851_Receive(struct KSZ8851_INTERFACE *interface, uint8_t *pRXData, 
 
   // After enabling interrupts, an interrupt is generated immediately
 
-  return rxPacketLength;
+//  data = ksz8851_reg_read(interface, REG_INT_ENABLE);  /* ISR */
+//  dmc_puts("REG_INT_ENABLE ");
+//  dmc_puthex4cr(data);
+
+//  return bytesToRead;
+
+  /* Return frame length without CRC and 2 extra bytes */
+//  rxPacketLength -= 6;
+//  rxPacketLength -= 11; // Strip 11 characters
+//  frameLength = rxPacketLength - 2;
+//  frameLength = rxPacketLength + 2;
+  return interface->rxLength;
+
+
+
+
+//  /* Read the frame count and threshold register */
+//  rxftr = ksz8851_reg_read(interface, REG_RX_FRAME_CNT_THRES); /* RXFCTFC */
+//  /* Extract the actual number of frames from RX_FRAME_THRES_REG*/
+//  interface->rxFrameCount = rxftr >> MSB_POS;
+//
+//  while (interface->rxFrameCount > 0)
+//  {
+//    interface->rxFrameCount--;
+//    /* Read the received frame status */
+//    interface->rxStatus = ksz8851_reg_read(interface, REG_RX_FHR_STATUS);
+//
+//    /* Check the consistency of the frame */
+//    if ((!(interface->rxStatus & VALID_FRAME_MASK)) || (interface->rxStatus & CHECKSUM_VALID_FRAME_MASK))
+//    {
+//      /* Issue the Release error frame command */
+//      ksz8851_ReleaseIncosistentFrame(interface);
+//      /* continue to next frame */
+//      continue;
+//    }
+//    else
+//    {
+//      /* Read the byte size of the received frame */
+//      rxPacketLength = ksz8851_reg_read(interface, RXFHBCR) & RX_BYTE_CNT_MASK;
+//
+//      /* round to dword boundary */
+//      bytesToRead = 4 * ((rxPacketLength + 3) >> 2);
+////      LWIP_DEBUGF(NETIF_DEBUG,
+////          ("KSZ8851SNL_Receive: rxPacketLength=%u, bytesToRead=%u \n", rxPacketLength, bytesToRead));
+//      if ((bytesToRead > pRXLength) || (rxPacketLength <= 4))
+//      {
+//        /* Issue the Release error frame command */
+//        ksz8851_ReleaseIncosistentFrame(interface);
+//        /* continue to next frame */
+//        continue;
+//      }
+//
+//      /* Set QMU RXQ frame pointer to start of packet data. Note
+//       * that we skip the status word and byte count since we
+//       * already know this from RXFHSR and RXFHBCR.
+//       */
+//      ksz8851_reg_write(interface, REG_RX_ADDR_PTR, 0x0004 | FD_PTR_AUTO_INC);
+//
+//      /* Start QMU DMA transfer */
+//      data = ksz8851_reg_read(interface, REG_RXQ_CMD);
+//      data |= RXQ_START_DMA;
+//      ksz8851_reg_write(interface, REG_RXQ_CMD, data);
+//
+//      /* Read the whole ethernet frame */
+//      ksz8851_fifo_read(interface, pRXData, bytesToRead);
+//
+//      /* Stop QMU DMA transfer */
+//      data = ksz8851_reg_read(interface, REG_RXQ_CMD);
+//      data &= ~RXQ_START_DMA;
+//      ksz8851_reg_write(interface, REG_RXQ_CMD, data);
+//
+//      /* Enable interrupts */
+//      data = INT_MASK_EXAMPLE;
+//      ksz8851_reg_write(interface, REG_INT_ENABLE, data);
+//
+//      /* Return frame length without CRC */
+//      frameLength = rxPacketLength - 4;
+//      return frameLength;
+//    }
+//    /* Enable interrupts */
+//    data = INT_MASK_EXAMPLE;
+//    ksz8851_reg_write(interface, REG_INT_ENABLE, data);
+//  }
+//  return 0;
 }
 
 uint16_t ksz8851_PHYStatusGet(struct KSZ8851_INTERFACE *interface)
@@ -1550,7 +2261,7 @@ void ksz8851_SetDigitalLoopbackMode(struct KSZ8851_INTERFACE *interface)
   /* Disable Auto-negotiation.1. Reset PHY. */
   /* Set Speed to either 100Base-TX or 10Base-T. */
   /* Set Duplex to full-duplex. */
-  /* Set PHY register 0.14 to Â‘1Â’ to enable Local Loop-back. */
+  /* Set PHY register 0.14 to '1' to enable Local Loop-back. */
   data = DIGITAL_LOOPBACK | FORCE_FULL_DUPLEX | FORCE_100;
   data &= ~AUTO_NEG;
   ksz8851_reg_write(interface, REG_PHY_CNTL, data);
@@ -1569,7 +2280,7 @@ void ksz8851_EnableInterrupts(struct KSZ8851_INTERFACE *interface)
 
 // https://github.com/EnergyMicro/kit_common/blob/master/drivers/ksz8851snl.c
 /***************************************************************************//**
- * @brief Checks for any interrrupts and if found, clears their status
+ * @brief Checks for any interrupts and if found, clears their status
  *        and prepair for interrupt handler routines
  * @note  Programmer needs to re-enable the KSZ8851SNL interrupts after
  *        calling this function
@@ -1593,7 +2304,6 @@ uint16_t ksz8851_CheckIrqStat(struct KSZ8851_INTERFACE *interface)
   {
     dmc_puts("INT_RX_DONE\n");
     /* Clear RX Interrupt flag */
-    data = ksz8851_reg_read(interface, REG_INT_STATUS);
     data = INT_RX_DONE;
     ksz8851_reg_write(interface, REG_INT_STATUS, data);
     found_INT |= INT_RX_DONE;
@@ -1603,7 +2313,6 @@ uint16_t ksz8851_CheckIrqStat(struct KSZ8851_INTERFACE *interface)
   {
 //    dmc_puts("INT_LINK_CHANGE\n");
     /* Clear Link change Interrupt flag */
-    data = ksz8851_reg_read(interface, REG_INT_STATUS);
     data = INT_LINK_CHANGE;
     ksz8851_reg_write(interface, REG_INT_STATUS, data);
     found_INT |= INT_LINK_CHANGE;
@@ -1613,7 +2322,6 @@ uint16_t ksz8851_CheckIrqStat(struct KSZ8851_INTERFACE *interface)
   {
 //    dmc_puts("INT_RX_OVERRUN\n");
     /* Clear RX overrun Interrupt flag */
-    data = ksz8851_reg_read(interface, REG_INT_STATUS);
     data = INT_RX_OVERRUN;
     ksz8851_reg_write(interface, REG_INT_STATUS, data);
     found_INT |= INT_RX_OVERRUN;
@@ -1623,7 +2331,6 @@ uint16_t ksz8851_CheckIrqStat(struct KSZ8851_INTERFACE *interface)
   {
 //    dmc_puts("INT_TX_STOPPED\n");
     /* Clear TX stopped Interrupt flag */
-    data = ksz8851_reg_read(interface, REG_INT_STATUS);
     data = INT_TX_STOPPED;
     ksz8851_reg_write(interface, REG_INT_STATUS, data);
     found_INT |= INT_TX_STOPPED;
@@ -1633,7 +2340,6 @@ uint16_t ksz8851_CheckIrqStat(struct KSZ8851_INTERFACE *interface)
   {
 //    dmc_puts("INT_RX_STOPPED\n");
     /* Clear RX stopped Interrupt flag */
-    data = ksz8851_reg_read(interface, REG_INT_STATUS);
     data = INT_RX_STOPPED;
     ksz8851_reg_write(interface, REG_INT_STATUS, data);
     found_INT |= INT_RX_STOPPED;
@@ -1643,7 +2349,6 @@ uint16_t ksz8851_CheckIrqStat(struct KSZ8851_INTERFACE *interface)
   {
 //    dmc_puts("INT_RX_WOL_FRAME\n");
     /* Clear RX of a WakeOnLan Interrupt flag */
-    data = ksz8851_reg_read(interface, REG_INT_STATUS);
     data = INT_RX_WOL_FRAME;
     ksz8851_reg_write(interface, REG_INT_STATUS, data);
     found_INT |= INT_RX_WOL_FRAME;
@@ -1653,7 +2358,6 @@ uint16_t ksz8851_CheckIrqStat(struct KSZ8851_INTERFACE *interface)
   {
 //    dmc_puts("INT_MAGIC\n");
     /* Clear RX of a magic frame Interrupt flag */
-    data = ksz8851_reg_read(interface, REG_INT_STATUS);
     data = INT_MAGIC;
     ksz8851_reg_write(interface, REG_INT_STATUS, data);
     found_INT |= INT_MAGIC;
@@ -1663,7 +2367,6 @@ uint16_t ksz8851_CheckIrqStat(struct KSZ8851_INTERFACE *interface)
   {
 //    dmc_puts("INT_LINKUP\n");
     /* Clear RX of a LINKUP Interrupt flag */
-    data = ksz8851_reg_read(interface, REG_INT_STATUS);
     data = INT_LINKUP;
     ksz8851_reg_write(interface, REG_INT_STATUS, data);
     found_INT |= INT_LINKUP;
@@ -1673,7 +2376,6 @@ uint16_t ksz8851_CheckIrqStat(struct KSZ8851_INTERFACE *interface)
   {
 //    dmc_puts("INT_ENERGY\n");
     /* Clear RX of a Energy Interrupt flag */
-    data = ksz8851_reg_read(interface, REG_INT_STATUS);
     data = INT_ENERGY;
     ksz8851_reg_write(interface, REG_INT_STATUS, data);
     found_INT |= INT_ENERGY;
@@ -1683,7 +2385,6 @@ uint16_t ksz8851_CheckIrqStat(struct KSZ8851_INTERFACE *interface)
   {
 //    dmc_puts("INT_SPI_ERROR\n");
     /* Clear SPI Error Interrupt flag */
-    data = ksz8851_reg_read(interface, REG_INT_STATUS);
     data = INT_SPI_ERROR;
     ksz8851_reg_write(interface, REG_INT_STATUS, data);
     found_INT |= INT_SPI_ERROR;
@@ -1693,7 +2394,6 @@ uint16_t ksz8851_CheckIrqStat(struct KSZ8851_INTERFACE *interface)
   {
 //    dmc_puts("INT_TX_SPACE\n");
     /* Clear TX space Interrupt flag */
-    data = ksz8851_reg_read(interface, REG_INT_STATUS);
     data = INT_TX_SPACE;
     ksz8851_reg_write(interface, REG_INT_STATUS, data);
     found_INT |= INT_TX_SPACE;
@@ -1803,7 +2503,7 @@ void ksz8851_irq(struct KSZ8851_INTERFACE *interface)
     {
       // LDIS Linkup Detect Interrupt Status
       // When this bit is set, it indicates that wake-up from linkup detect status
-      // has occurred. Write “0010” to PMECR[5:2] to clear this bit.
+      // has occurred. Write "0010" to PMECR[5:2] to clear this bit.
       dmc_puts("LDI (Link up)\n");
         uint16_t PHYStatusGet = ksz8851_PHYStatusGet(interface);
 //        if (PHYStatusGet & (1 < 15))
@@ -1826,7 +2526,7 @@ void ksz8851_irq(struct KSZ8851_INTERFACE *interface)
   {
     // LDIS Linkup Detect Interrupt Status
     // When this bit is set, it indicates that wake-up from linkup detect status
-    // has occurred. Write “0010” to PMECR[5:2] to clear this bit.
+    // has occurred. Write "0010" to PMECR[5:2] to clear this bit.
 //    ksz8851_reg_write(interface, REG_INT_STATUS, isr);
     dmc_puts("LDI (Link up)\n");
   }
@@ -1917,7 +2617,7 @@ void ksz8851_EnableRxInterrupt(struct KSZ8851_INTERFACE *interface)
 
 void ksz8851_DisableRxInterrupt(struct KSZ8851_INTERFACE *interface)
 {
-  // Clr RXIE Receive Interrupt Enable
+  // Clear RXIE Receive Interrupt Enable
   ksz8851_reg_clrbits(interface, INT_ENABLE_REG, INT_RX);
 }
 
@@ -1927,12 +2627,12 @@ uint16_t ksz8851_ReadRxFrameCount(struct KSZ8851_INTERFACE *interface)
   // Bit 15-8
   // RXFC RX Frame Count
   // To indicate the total received frames in RXQ frame buffer when receive
-  // interrupt (bit13=1 in ISR) occurred and write “1” to clear this bit 13 in
+  // interrupt (bit13=1 in ISR) occurred and write "1" to clear this bit 13 in
   // ISR. The host CPU can start to read the updated receive frame header
   // information in RXFHSR/RXFHBCR registers after read this RX frame
   // count register.
   rxfctr = ksz8851_reg_read(interface, KS_RXFCTR);
-  rxfctr = rxfctr >> 8;
+  rxfctr = rxfctr >> MSB_POS;
   return rxfctr;
 }
 
@@ -1940,7 +2640,7 @@ uint16_t ksz8851_ReadRxByteCount(struct KSZ8851_INTERFACE *interface)
 {
   uint16_t rxfhbcr;
   rxfhbcr = ksz8851_reg_read(interface, REG_RX_FHR_BYTE_CNT);
-  rxfhbcr &= 0x0fff;
+  rxfhbcr &= RX_BYTE_CNT_MASK;
   return rxfhbcr;
 }
 
@@ -1972,28 +2672,23 @@ void ksz8851_ClearRxFramePointer(struct KSZ8851_INTERFACE *interface)
 {
   // The value of this register determines the address to be accessed within the RXQ frame buffer. When the Auto Increment
   // is set, it will automatically increment the RXQ Pointer on read accesses to the data register.
-  // The counter is incremented is by one for every byte access, by two for every word access, and by four for every double
+  // The counter is incremented by one for every byte access, by two for every word access, and by four for every double
   // word access.
   uint16_t rxfdpr;
   rxfdpr = ksz8851_reg_read(interface, RX_FD_PTR_REG);
-  rxfdpr &= ADDR_PTR_AUTO_INC;  // Save ADDR_PTR_AUTO_INC bit, clear 0x07ff = pointer mask
+  // Save ADDR_PTR_AUTO_INC bit, clear 0x07ff = pointer mask
+  rxfdpr &= ADDR_PTR_AUTO_INC;
   ksz8851_reg_write(interface, RX_FD_PTR_REG, rxfdpr);
 }
 
 void ksz8851_SetRxFramePointerAutoIncrement(struct KSZ8851_INTERFACE *interface)
 {
-  uint16_t rxfdpr;
-  rxfdpr = ksz8851_reg_read(interface, RX_FD_PTR_REG);
-  rxfdpr |= ADDR_PTR_AUTO_INC;
-  ksz8851_reg_write(interface, RX_FD_PTR_REG, rxfdpr);
+  ksz8851_reg_setbits(interface, RX_FD_PTR_REG, ADDR_PTR_AUTO_INC);
 }
 
 void ksz8851_ClrRxFramePointerAutoIncrement(struct KSZ8851_INTERFACE *interface)
 {
-  uint16_t rxfdpr;
-  rxfdpr = ksz8851_reg_read(interface, RX_FD_PTR_REG);
-  rxfdpr &= ~ADDR_PTR_AUTO_INC;
-  ksz8851_reg_write(interface, RX_FD_PTR_REG, rxfdpr);
+  ksz8851_reg_clrbits(interface, RX_FD_PTR_REG, ADDR_PTR_AUTO_INC);
 }
 
 void ksz8851_EnableRXQReadAccess(struct KSZ8851_INTERFACE *interface)
@@ -2101,7 +2796,7 @@ void ksz8851_IntHandler(struct KSZ8851_INTERFACE *interface)
 //    {
 //      // LDIS Linkup Detect Interrupt Status
 //      // When this bit is set, it indicates that wake-up from linkup detect status
-//      // has occurred. Write “0010” to PMECR[5:2] to clear this bit.
+//      // has occurred. Write "0010" to PMECR[5:2] to clear this bit.
 //      dmc_puts("LDI (Link up)\n");
 //        uint16_t PHYStatusGet = ksz8851_PHYStatusGet(interface);
 ////        if (PHYStatusGet & (1 < 15))
@@ -2123,8 +2818,8 @@ void ksz8851_IntHandler(struct KSZ8851_INTERFACE *interface)
 //  if (isr & IRQ_LDI)
 //  {
 //    // LDIS Linkup Detect Interrupt Status
-//    // When this bit is set, it indicates that wake-up from linkup detect status
-//    // has occurred. Write “0010” to PMECR[5:2] to clear this bit.
+//    // When this bit is set, it indicates that wake-up from Linkup detect status
+//    // has occurred. Write "0010" to PMECR[5:2] to clear this bit.
 ////    ksz8851_reg_write(interface, REG_INT_STATUS, isr);
 //    dmc_puts("LDI (Link up)\n");
 //  }
@@ -2224,8 +2919,8 @@ void ksz8851_show_isr(struct KSZ8851_INTERFACE *interface, uint16_t isr_reg)
     if (isr_reg & IRQ_LDI)
     {
       // LDIS Linkup Detect Interrupt Status
-      // When this bit is set, it indicates that wake-up from linkup detect status
-      // has occurred. Write “0010” to PMECR[5:2] to clear this bit.
+      // When this bit is set, it indicates that wake-up from Linkup detect status
+      // has occurred. Write "0010" to PMECR[5:2] to clear this bit.
       dmc_puts("LDI (Link up)\n");
       uint16_t PHYStatusGet = ksz8851_PHYStatusGet(interface);
       //        if (PHYStatusGet & (1 < 15))
@@ -2247,8 +2942,8 @@ void ksz8851_show_isr(struct KSZ8851_INTERFACE *interface, uint16_t isr_reg)
   if (isr_reg & IRQ_LDI)
   {
     // LDIS Linkup Detect Interrupt Status
-    // When this bit is set, it indicates that wake-up from linkup detect status
-    // has occurred. Write “0010” to PMECR[5:2] to clear this bit.
+    // When this bit is set, it indicates that wake-up from Linkup detect status
+    // has occurred. Write "0010" to PMECR[5:2] to clear this bit.
     //    ksz8851_reg_write(interface, REG_INT_STATUS, isr);
     dmc_puts("LDI (Link up)\n");
   }
@@ -2472,3 +3167,4 @@ uint32_t KSZ8851_GetLinkState(struct KSZ8851_INTERFACE *interface)
 
   return interface->state;
 }
+
